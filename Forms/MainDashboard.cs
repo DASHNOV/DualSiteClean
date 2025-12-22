@@ -4,11 +4,18 @@ using System.Windows.Forms;
 using System.Collections.Generic;
 using DoublonManager.Helpers;
 using DoublonManager.Models;
+using DoublonManager.Services;
+using System.Threading.Tasks;
 
 namespace DoublonManager.Forms
 {
     public partial class MainDashboard : Form
     {
+        private DatabaseService _dbService;
+        private Label lblCount39C;
+        private Label lblCount19M;
+        private Label lblLastAnalysis;
+
         private Panel pnlSite39C;
         private Panel pnlSite19M;
         private Panel pnlLastAnalysis;
@@ -20,7 +27,7 @@ namespace DoublonManager.Forms
         {
             CreateMenuBar();
             InitializeCustomComponents();
-            LoadDashboardData();
+            InitializeDatabase();
         }
 
         private void CreateMenuBar()
@@ -68,20 +75,20 @@ namespace DoublonManager.Forms
         private void CreateOverviewPanels()
         {
             // Panel Site 39C
-            pnlSite39C = CreateOverviewPanel("📍", "Site 39C", "1,245 fiches", 30);
+            pnlSite39C = CreateOverviewPanel("📍", "Site 39C", "Chargement...", 30, out lblCount39C);
             
             // Panel Site 19M
-            pnlSite19M = CreateOverviewPanel("📍", "Site 19M", "892 fiches", 390);
+            pnlSite19M = CreateOverviewPanel("📍", "Site 19M", "Chargement...", 390, out lblCount19M);
             
             // Panel Dernière analyse
-            pnlLastAnalysis = CreateOverviewPanel("🔄", "Dernière analyse", "Aujourd'hui 09:00", 750);
+            pnlLastAnalysis = CreateOverviewPanel("🔄", "Dernière analyse", "...", 750, out lblLastAnalysis);
 
             this.Controls.Add(pnlSite39C);
             this.Controls.Add(pnlSite19M);
             this.Controls.Add(pnlLastAnalysis);
         }
 
-        private Panel CreateOverviewPanel(string iconText, string titleText, string valueText, int xPosition)
+        private Panel CreateOverviewPanel(string iconText, string titleText, string valueText, int xPosition, out Label valueLabel)
         {
             Panel panel = new Panel
             {
@@ -113,7 +120,7 @@ namespace DoublonManager.Forms
             };
 
             // Valeur en dessous - Alignée avec le titre
-            Label lblValue = new Label
+            valueLabel = new Label
             {
                 Text = valueText,
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
@@ -126,7 +133,7 @@ namespace DoublonManager.Forms
 
             panel.Controls.Add(lblIcon);
             panel.Controls.Add(lblTitle);
-            panel.Controls.Add(lblValue);
+            panel.Controls.Add(valueLabel);
 
             return panel;
         }
@@ -243,9 +250,58 @@ namespace DoublonManager.Forms
             btn.MouseLeave += (s, e) => btn.BackColor = normalColor;
         }
 
-        private void LoadDashboardData()
+        private void InitializeDatabase()
         {
-            // Mock data loading
+            var (site39C, site19M) = ConnectionHelper.LoadConnectionSettings();
+            
+            if (site39C == null || site19M == null)
+            {
+                // Afficher SettingsForm comme dans l'étape 1
+                return;
+            }
+
+            string connStr39C = ConnectionHelper.BuildConnectionString(
+                site39C.Server, site39C.Database, site39C.UseWindowsAuth,
+                site39C.Username, site39C.Password
+            );
+
+            string connStr19M = ConnectionHelper.BuildConnectionString(
+                site19M.Server, site19M.Database, site19M.UseWindowsAuth,
+                site19M.Username, site19M.Password
+            );
+
+            _dbService = new DatabaseService(connStr39C, connStr19M);
+            
+            // Charger les données
+            LoadDashboardData();
+        }
+
+        private async void LoadDashboardData()
+        {
+            try
+            {
+                // Afficher un indicateur de chargement
+                this.Cursor = Cursors.WaitCursor;
+
+                // Charger les statistiques
+                if (_dbService != null)
+                {
+                    var stats = await _dbService.GetSiteStatistics();
+                    
+                    // Mettre à jour l'interface
+                    lblCount39C.Text = $"{stats.Count39C:N0} fiches";
+                    lblCount19M.Text = $"{stats.Count19M:N0} fiches";
+                    lblLastAnalysis.Text = $"Aujourd'hui {stats.LastUpdate:HH:mm}";
+                }
+
+                this.Cursor = Cursors.Default;
+            }
+            catch (Exception ex)
+            {
+                this.Cursor = Cursors.Default;
+                MessageBox.Show($"Erreur lors du chargement des données :\n{ex.Message}",
+                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void btnAnalyze_Click(object? sender, EventArgs e)

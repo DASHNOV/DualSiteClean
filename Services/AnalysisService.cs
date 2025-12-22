@@ -23,14 +23,37 @@ namespace DoublonManager.Services
                 Duplicates = new List<Duplicate>()
             };
 
-            // 1. Fetch data
-            var employees39C = await _dbService.GetEmployeesFromSite("39C");
-            var employees19M = await _dbService.GetEmployeesFromSite("19M");
+            // 1. Fetch data from new DatabaseService (returns DbEmployee)
+            var dbEmployees39C = await _dbService.GetAllEmployees("39C");
+            var dbEmployees19M = await _dbService.GetAllEmployees("19M");
+
+            // 2. Convert DbEmployee to Employee model for compatibility
+            var employees39C = dbEmployees39C.Select(e => new Employee
+            {
+                ID = 0, // Not used
+                LastName = e.Nom,
+                FirstName = e.Prenom,
+                Code = e.CodeEmploye,
+                Num = e.NumeroEmploye,
+                LocDate = e.DateEmbauche,
+                Site = "39C"
+            }).ToList();
+
+            var employees19M = dbEmployees19M.Select(e => new Employee
+            {
+                ID = 0, // Not used
+                LastName = e.Nom,
+                FirstName = e.Prenom,
+                Code = e.CodeEmploye,
+                Num = e.NumeroEmploye,
+                LocDate = e.DateEmbauche,
+                Site = "19M"
+            }).ToList();
 
             result.Count39C = employees39C.Count;
             result.Count19M = employees19M.Count;
 
-            // 2. Perform Analysis
+            // 3. Perform Analysis
             foreach (var emp39C in employees39C)
             {
                 // Match primarily on Name (Last + First) for this specific business logic

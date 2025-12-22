@@ -13,7 +13,7 @@ namespace DoublonManager.Services
             _dbService = dbService;
         }
 
-        public async Task<bool> DeleteDuplicate(Duplicate duplicate, string siteToKeep)
+        public async Task<bool> DeleteDuplicate(Duplicate duplicate, string siteToKeep, string deletedBy = "System")
         {
             try
             {
@@ -25,12 +25,12 @@ namespace DoublonManager.Services
                 if (siteToKeep == "39C")
                 {
                     // Delete 19M employee
-                    await _dbService.DeleteEmployee(duplicate.DestEmployee.ID, "19M");
+                    await _dbService.DeleteEmployee("19M", duplicate.DestEmployee.Code, deletedBy);
                 }
                 else if (siteToKeep == "19M")
                 {
                     // Delete 39C employee
-                    await _dbService.DeleteEmployee(duplicate.SourceEmployee.ID, "39C");
+                    await _dbService.DeleteEmployee("39C", duplicate.SourceEmployee.Code, deletedBy);
                 }
 
                 duplicate.Status = "Traité - Supprimé";
