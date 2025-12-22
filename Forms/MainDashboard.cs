@@ -18,8 +18,30 @@ namespace DoublonManager.Forms
 
         public MainDashboard()
         {
+            CreateMenuBar();
             InitializeCustomComponents();
             LoadDashboardData();
+        }
+
+        private void CreateMenuBar()
+        {
+            MenuStrip menuStrip = new MenuStrip();
+            
+            ToolStripMenuItem menuSettings = new ToolStripMenuItem("⚙️ Paramètres");
+            menuSettings.Click += (s, e) => 
+            {
+                // Note: SettingsForm is in DoublonManager.Forms namespace which is current namespace
+                var settingsForm = new SettingsForm();
+                if (settingsForm.ShowDialog() == DialogResult.OK)
+                {
+                    MessageBox.Show("Configuration mise à jour.\nVeuillez redémarrer l'application.", 
+                        "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+            
+            menuStrip.Items.Add(menuSettings);
+            this.MainMenuStrip = menuStrip;
+            this.Controls.Add(menuStrip);
         }
 
         private void InitializeCustomComponents()
