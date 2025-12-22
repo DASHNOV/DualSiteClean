@@ -1,0 +1,9 @@
+[Bb]in/
+[Oo]bj/
+dist/
+*.pdb
+*.user
+*.suo
+*.sln.docstates
+.vs/
+build_err.txt
