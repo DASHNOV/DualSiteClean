@@ -24,8 +24,8 @@ namespace DoublonManager.Services
             foreach (var dup in result.Duplicates)
             {
                 lines.Add($"Type: {dup.Type} | Statut: {dup.Status}");
-                lines.Add($"  39C: {dup.SourceEmployee.FullName} ({dup.SourceEmployee.Code})");
-                lines.Add($"  19M: {dup.DestEmployee.FullName} ({dup.DestEmployee.Code})");
+                lines.Add($"  39C: {dup.SourceEmployee.FullName} ({dup.SourceEmployee.ID})");
+                lines.Add($"  19M: {dup.DestEmployee.FullName} ({dup.DestEmployee.ID})");
                 lines.Add("");
             }
 

@@ -4,14 +4,17 @@ namespace DoublonManager.Models
 {
     public class Employee
     {
-        public int ID { get; set; }
+        public string SiteCode { get; set; } = string.Empty;
+        public string ID { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
-        public string Code { get; set; } = string.Empty;
-        public int Num { get; set; }
-        public DateTime? LocDate { get; set; }
-        public string Site { get; set; } = string.Empty; // "39C" ou "19M"
+        public string CardholderIdNumber { get; set; } = string.Empty;
+        public DateTime? FromDateValid { get; set; }
+        public int Status { get; set; }
+        public string DepartmentUID { get; set; } = string.Empty;
+        public DateTime? LastDownloadTime { get; set; }
+        public string AD_Username { get; set; } = string.Empty;
 
-        public string FullName => $"{LastName} {FirstName}";
+        public string FullName => $"{FirstName} {LastName}";
     }
 }

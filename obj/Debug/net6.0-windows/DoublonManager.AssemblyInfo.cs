@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DoublonManager")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ece98e794b996250639323ba3989613b24cff15b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b4579b9f95dcd10937ddf115e597ee4d4b19e9cd")]
 [assembly: System.Reflection.AssemblyProductAttribute("DoublonManager")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DoublonManager")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

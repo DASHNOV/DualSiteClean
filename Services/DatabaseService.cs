@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using DoublonManager.Helpers;
 
 namespace DoublonManager.Services
 {
@@ -26,26 +27,32 @@ namespace DoublonManager.Services
         public async Task<int> GetEmployeeCount(string siteCode)
         {
             string connStr = siteCode == "39C" ? _connectionString39C : _connectionString19M;
+            LogHelper.Info("DATABASE", $"Comptage des employés pour le site {siteCode}");
 
             string query = @"
                 SELECT COUNT(*) 
-                FROM dbo.employes 
-                WHERE statut = 'Actif'";
+                FROM dbo.Cardholders 
+                WHERE Status = 1";
 
             try
             {
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
+                    LogHelper.Debug("DATABASE", $"Ouverture de la connexion pour le site {siteCode}...");
                     await conn.OpenAsync();
+                    
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         object result = await cmd.ExecuteScalarAsync();
-                        return Convert.ToInt32(result);
+                        int count = Convert.ToInt32(result);
+                        LogHelper.Info("DATABASE", $"Succès : {count} employés actifs trouvés pour le site {siteCode}");
+                        return count;
                     }
                 }
             }
             catch (Exception ex)
             {
+                LogHelper.Error("DATABASE", $"❌ Erreur lors du comptage des employés du site {siteCode}", ex);
                 throw new Exception($"Erreur lors du comptage des employés du site {siteCode}: {ex.Message}", ex);
             }
         }
@@ -87,21 +94,22 @@ namespace DoublonManager.Services
         public async Task<List<DbEmployee>> GetAllEmployees(string siteCode)
         {
             string connStr = siteCode == "39C" ? _connectionString39C : _connectionString19M;
+            LogHelper.Info("DATABASE", $"Chargement de tous les employés actifs pour le site {siteCode}");
 
             string query = @"
                 SELECT 
-                    code_employe,
-                    nom,
-                    prenom,
-                    numero_employe,
-                    date_embauche,
-                    statut,
-                    departement,
-                    date_modification,
-                    modifie_par
-                FROM dbo.employes
-                WHERE statut = 'Actif'
-                ORDER BY nom, prenom";
+                    ID,
+                    LastName,
+                    FirstName,
+                    CardholderIdNumber,
+                    FromDateValid,
+                    Status,
+                    DepartmentUID,
+                    LastDownloadTime,
+                    AD_Username
+                FROM dbo.Cardholders
+                WHERE Status = 1
+                ORDER BY LastName, FirstName";
 
             List<DbEmployee> employees = new List<DbEmployee>();
 
@@ -109,7 +117,9 @@ namespace DoublonManager.Services
             {
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
+                    LogHelper.Debug("DATABASE", $"Ouverture de la connexion pour le site {siteCode}...");
                     await conn.OpenAsync();
+                    
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
@@ -119,28 +129,30 @@ namespace DoublonManager.Services
                                 employees.Add(new DbEmployee
                                 {
                                     SiteCode = siteCode,
-                                    CodeEmploye = reader["code_employe"].ToString(),
-                                    Nom = reader["nom"].ToString(),
-                                    Prenom = reader["prenom"].ToString(),
-                                    NumeroEmploye = reader["numero_employe"] != DBNull.Value 
-                                        ? Convert.ToInt32(reader["numero_employe"]) : 0,
-                                    DateEmbauche = reader["date_embauche"] != DBNull.Value 
-                                        ? Convert.ToDateTime(reader["date_embauche"]) : DateTime.MinValue,
-                                    Statut = reader["statut"].ToString(),
-                                    Departement = reader["departement"].ToString(),
-                                    DateModification = reader["date_modification"] != DBNull.Value 
-                                        ? Convert.ToDateTime(reader["date_modification"]) : DateTime.MinValue,
-                                    ModifiePar = reader["modifie_par"].ToString()
+                                    ID = reader["ID"].ToString(),
+                                    LastName = reader["LastName"].ToString(),
+                                    FirstName = reader["FirstName"].ToString(),
+                                    CardholderIdNumber = reader["CardholderIdNumber"] != DBNull.Value 
+                                        ? reader["CardholderIdNumber"].ToString() : "",
+                                    FromDateValid = reader["FromDateValid"] != DBNull.Value 
+                                        ? Convert.ToDateTime(reader["FromDateValid"]) : DateTime.MinValue,
+                                    Status = Convert.ToInt32(reader["Status"]),
+                                    DepartmentUID = reader["DepartmentUID"].ToString(),
+                                    LastDownloadTime = reader["LastDownloadTime"] != DBNull.Value 
+                                        ? Convert.ToDateTime(reader["LastDownloadTime"]) : DateTime.MinValue,
+                                    AD_Username = reader["AD_Username"].ToString()
                                 });
                             }
                         }
                     }
                 }
 
+                LogHelper.Info("DATABASE", $"✅ Chargement terminé : {employees.Count} employés récupérés pour le site {siteCode}");
                 return employees;
             }
             catch (Exception ex)
             {
+                LogHelper.Error("DATABASE", $"❌ Erreur lors du chargement des employés du site {siteCode}", ex);
                 throw new Exception($"Erreur lors du chargement des employés du site {siteCode}: {ex.Message}", ex);
             }
         }
@@ -174,6 +186,7 @@ namespace DoublonManager.Services
         /// </summary>
         public async Task<DuplicateAnalysisResult> DetectDuplicates()
         {
+            LogHelper.Info("ANALYSIS", "Début de la détection des doublons sur les deux sites");
             var result = new DuplicateAnalysisResult
             {
                 AnalysisDate = DateTime.Now
@@ -187,19 +200,26 @@ namespace DoublonManager.Services
                 result.TotalEmployees39C = employees39C.Count;
                 result.TotalEmployees19M = employees19M.Count;
 
-                // Détection par code différent
+                LogHelper.Debug("ANALYSIS", "Lancement de la détection par codes différents...");
                 result.DifferentCodeDuplicates = DetectDifferentCodeDuplicates(employees39C, employees19M);
-
-                // Détection par numéro différent
+                
+                LogHelper.Debug("ANALYSIS", "Lancement de la détection par numéros différents...");
                 result.DifferentNumberDuplicates = DetectDifferentNumberDuplicates(employees39C, employees19M);
-
-                // Détection des cas ambigus
+                
+                LogHelper.Debug("ANALYSIS", "Lancement de la détection des cas ambigus...");
                 result.AmbiguousCases = DetectAmbiguousCases(employees39C, employees19M);
+
+                LogHelper.Info("ANALYSIS", 
+                    $"✅ Analyse terminée. Doublons trouvés : " +
+                    $"{result.DifferentCodeDuplicates.Count} codes diff, " +
+                    $"{result.DifferentNumberDuplicates.Count} numéros diff, " +
+                    $"{result.AmbiguousCases.Count} ambigus");
 
                 return result;
             }
             catch (Exception ex)
             {
+                LogHelper.Error("ANALYSIS", "❌ Erreur critique lors de la détection des doublons", ex);
                 throw new Exception($"Erreur lors de la détection des doublons: {ex.Message}", ex);
             }
         }
@@ -215,11 +235,11 @@ namespace DoublonManager.Services
                 foreach (var emp19M in site19M)
                 {
                     // Même nom, prénom et numéro, mais codes différents
-                    if (emp39C.Nom.Equals(emp19M.Nom, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.Prenom.Equals(emp19M.Prenom, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.NumeroEmploye == emp19M.NumeroEmploye &&
-                        emp39C.NumeroEmploye != 0 &&
-                        !emp39C.CodeEmploye.Equals(emp19M.CodeEmploye, StringComparison.OrdinalIgnoreCase))
+                    if (emp39C.LastName.Equals(emp19M.LastName, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.FirstName.Equals(emp19M.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.CardholderIdNumber == emp19M.CardholderIdNumber &&
+                        !string.IsNullOrEmpty(emp39C.CardholderIdNumber) &&
+                        !emp39C.ID.Equals(emp19M.ID, StringComparison.OrdinalIgnoreCase))
                     {
                         duplicates.Add(new DuplicatePair
                         {
@@ -246,12 +266,12 @@ namespace DoublonManager.Services
                 foreach (var emp19M in site19M)
                 {
                     // Même nom, prénom et code, mais numéros différents
-                    if (emp39C.Nom.Equals(emp19M.Nom, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.Prenom.Equals(emp19M.Prenom, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.CodeEmploye.Equals(emp19M.CodeEmploye, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.NumeroEmploye != emp19M.NumeroEmploye &&
-                        emp39C.NumeroEmploye != 0 &&
-                        emp19M.NumeroEmploye != 0)
+                    if (emp39C.LastName.Equals(emp19M.LastName, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.FirstName.Equals(emp19M.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.ID.Equals(emp19M.ID, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.CardholderIdNumber != emp19M.CardholderIdNumber &&
+                        !string.IsNullOrEmpty(emp39C.CardholderIdNumber) &&
+                        !string.IsNullOrEmpty(emp19M.CardholderIdNumber))
                     {
                         duplicates.Add(new DuplicatePair
                         {
@@ -278,13 +298,13 @@ namespace DoublonManager.Services
                 foreach (var emp19M in site19M)
                 {
                     // Même nom et prénom, mais différences sur code ET numéro
-                    if (emp39C.Nom.Equals(emp19M.Nom, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.Prenom.Equals(emp19M.Prenom, StringComparison.OrdinalIgnoreCase) &&
-                        !emp39C.CodeEmploye.Equals(emp19M.CodeEmploye, StringComparison.OrdinalIgnoreCase) &&
-                        emp39C.NumeroEmploye != emp19M.NumeroEmploye)
+                    if (emp39C.LastName.Equals(emp19M.LastName, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.FirstName.Equals(emp19M.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                        !emp39C.ID.Equals(emp19M.ID, StringComparison.OrdinalIgnoreCase) &&
+                        emp39C.CardholderIdNumber != emp19M.CardholderIdNumber)
                     {
                         // Cas ambigu si dates de modification identiques
-                        if (Math.Abs((emp39C.DateModification - emp19M.DateModification).TotalHours) < 1)
+                        if (Math.Abs((emp39C.LastDownloadTime - emp19M.LastDownloadTime).TotalHours) < 1)
                         {
                             ambiguous.Add(new DuplicatePair
                             {
@@ -306,25 +326,25 @@ namespace DoublonManager.Services
             double confidence = 0.0;
 
             // Nom et prénom identiques : +40%
-            if (emp1.Nom.Equals(emp2.Nom, StringComparison.OrdinalIgnoreCase))
+            if (emp1.LastName.Equals(emp2.LastName, StringComparison.OrdinalIgnoreCase))
                 confidence += 0.20;
-            if (emp1.Prenom.Equals(emp2.Prenom, StringComparison.OrdinalIgnoreCase))
+            if (emp1.FirstName.Equals(emp2.FirstName, StringComparison.OrdinalIgnoreCase))
                 confidence += 0.20;
 
             // Code identique : +20%
-            if (emp1.CodeEmploye.Equals(emp2.CodeEmploye, StringComparison.OrdinalIgnoreCase))
+            if (emp1.ID.Equals(emp2.ID, StringComparison.OrdinalIgnoreCase))
                 confidence += 0.20;
 
             // Numéro identique : +20%
-            if (emp1.NumeroEmploye == emp2.NumeroEmploye && emp1.NumeroEmploye != 0)
+            if (emp1.CardholderIdNumber == emp2.CardholderIdNumber && !string.IsNullOrEmpty(emp1.CardholderIdNumber))
                 confidence += 0.20;
 
             // Département identique : +10%
-            if (emp1.Departement.Equals(emp2.Departement, StringComparison.OrdinalIgnoreCase))
+            if (emp1.DepartmentUID.Equals(emp2.DepartmentUID, StringComparison.OrdinalIgnoreCase))
                 confidence += 0.10;
 
             // Date d'embauche proche (±30 jours) : +10%
-            if (Math.Abs((emp1.DateEmbauche - emp2.DateEmbauche).TotalDays) <= 30)
+            if (Math.Abs((emp1.FromDateValid - emp2.FromDateValid).TotalDays) <= 30)
                 confidence += 0.10;
 
             return Math.Min(confidence, 1.0); // Max 100%
@@ -340,36 +360,44 @@ namespace DoublonManager.Services
         public async Task<bool> DeleteEmployee(string siteCode, string codeEmploye, string deletedBy)
         {
             string connStr = siteCode == "39C" ? _connectionString39C : _connectionString19M;
+            LogHelper.Info("DATABASE", $"Suppression de l'employé {codeEmploye} sur le site {siteCode} (par: {deletedBy})");
 
-            // Option 1 : Suppression logique (recommandé)
+            // Option 1 : Suppression logique (statut = 0 ou 2 selon le système)
             string query = @"
-                UPDATE dbo.employes 
+                UPDATE dbo.Cardholders 
                 SET 
-                    statut = 'Supprimé',
-                    date_modification = GETDATE(),
-                    modifie_par = @deletedBy
-                WHERE code_employe = @codeEmploye";
-
-            // Option 2 : Suppression physique (décommenter si nécessaire)
-            // string query = "DELETE FROM dbo.employes WHERE code_employe = @codeEmploye";
+                    Status = 0,
+                    LastDownloadTime = GETDATE(),
+                    AD_Username = @deletedBy
+                WHERE ID = @codeEmploye";
 
             try
             {
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
+                    LogHelper.Debug("DATABASE", $"Ouverture de la connexion pour suppression sur le site {siteCode}...");
                     await conn.OpenAsync();
+                    
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@codeEmploye", codeEmploye);
                         cmd.Parameters.AddWithValue("@deletedBy", deletedBy);
 
                         int rowsAffected = await cmd.ExecuteNonQueryAsync();
-                        return rowsAffected > 0;
+                        bool success = rowsAffected > 0;
+                        
+                        if (success)
+                            LogHelper.Info("DATABASE", $"✅ Employé {codeEmploye} supprimé avec succès sur le site {siteCode}");
+                        else
+                            LogHelper.Warning("DATABASE", $"⚠️ Aucune ligne affectée lors de la suppression de {codeEmploye} sur {siteCode}");
+                        
+                        return success;
                     }
                 }
             }
             catch (Exception ex)
             {
+                LogHelper.Error("DATABASE", $"❌ Erreur lors de la suppression de l'employé {codeEmploye} du site {siteCode}", ex);
                 throw new Exception($"Erreur lors de la suppression de l'employé {codeEmploye} du site {siteCode}: {ex.Message}", ex);
             }
         }
@@ -389,7 +417,7 @@ namespace DoublonManager.Services
             {
                 try
                 {
-                    bool success = await DeleteEmployee(request.SiteCode, request.CodeEmploye, deletedBy);
+                    bool success = await DeleteEmployee(request.SiteCode, request.ID, deletedBy);
                     
                     if (success)
                     {
@@ -475,17 +503,17 @@ namespace DoublonManager.Services
     public class DbEmployee
     {
         public string SiteCode { get; set; }
-        public string CodeEmploye { get; set; }
-        public string Nom { get; set; }
-        public string Prenom { get; set; }
-        public int NumeroEmploye { get; set; }
-        public DateTime DateEmbauche { get; set; }
-        public string Statut { get; set; }
-        public string Departement { get; set; }
-        public DateTime DateModification { get; set; }
-        public string ModifiePar { get; set; }
+        public string ID { get; set; }
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        public string CardholderIdNumber { get; set; }
+        public DateTime FromDateValid { get; set; }
+        public int Status { get; set; }
+        public string DepartmentUID { get; set; }
+        public DateTime LastDownloadTime { get; set; }
+        public string AD_Username { get; set; }
 
-        public string NomComplet => $"{Prenom} {Nom}";
+        public string FullName => $"{FirstName} {LastName}";
     }
 
     public class SiteStatistics
@@ -529,8 +557,8 @@ namespace DoublonManager.Services
     public class DeletionRequest
     {
         public string SiteCode { get; set; }
-        public string CodeEmploye { get; set; }
-        public string NomComplet { get; set; }
+        public string ID { get; set; }
+        public string FullName { get; set; }
     }
 
     public class BatchDeleteResult

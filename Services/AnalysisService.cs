@@ -30,24 +30,30 @@ namespace DoublonManager.Services
             // 2. Convert DbEmployee to Employee model for compatibility
             var employees39C = dbEmployees39C.Select(e => new Employee
             {
-                ID = 0, // Not used
-                LastName = e.Nom,
-                FirstName = e.Prenom,
-                Code = e.CodeEmploye,
-                Num = e.NumeroEmploye,
-                LocDate = e.DateEmbauche,
-                Site = "39C"
+                LastName = e.LastName,
+                FirstName = e.FirstName,
+                ID = e.ID,
+                CardholderIdNumber = e.CardholderIdNumber,
+                FromDateValid = e.FromDateValid,
+                SiteCode = "39C",
+                Status = e.Status,
+                DepartmentUID = e.DepartmentUID,
+                LastDownloadTime = e.LastDownloadTime,
+                AD_Username = e.AD_Username
             }).ToList();
 
             var employees19M = dbEmployees19M.Select(e => new Employee
             {
-                ID = 0, // Not used
-                LastName = e.Nom,
-                FirstName = e.Prenom,
-                Code = e.CodeEmploye,
-                Num = e.NumeroEmploye,
-                LocDate = e.DateEmbauche,
-                Site = "19M"
+                LastName = e.LastName,
+                FirstName = e.FirstName,
+                ID = e.ID,
+                CardholderIdNumber = e.CardholderIdNumber,
+                FromDateValid = e.FromDateValid,
+                SiteCode = "19M",
+                Status = e.Status,
+                DepartmentUID = e.DepartmentUID,
+                LastDownloadTime = e.LastDownloadTime,
+                AD_Username = e.AD_Username
             }).ToList();
 
             result.Count39C = employees39C.Count;
@@ -74,26 +80,23 @@ namespace DoublonManager.Services
                     };
 
                     // Analyze type
-                    if (emp39C.Code == match.Code && emp39C.Num == match.Num)
+                    if (emp39C.ID == match.ID && emp39C.CardholderIdNumber == match.CardholderIdNumber)
                     {
-                        // Exact match on identifiers, maybe just different location?
-                        // If logic implies they shouldn't exist in both, it's a duplicate.
-                        // For this exercise, let's mark it as Ambiguous if everything is identical (why is it a duplicate?)
-                        // Or maybe "Parfait doublon"
+                        // Exact match on identifiers
                          duplicate.Type = DuplicateType.CasAmbigu;
                          duplicate.Status = "Identique";
                     }
-                    else if (emp39C.Code != match.Code)
+                    else if (emp39C.ID != match.ID)
                     {
                         duplicate.Type = DuplicateType.CodeDifferent;
-                        duplicate.Status = "Différence Code";
-                        duplicate.Recommendation = $"Garder {emp39C.Code} ?";
+                        duplicate.Status = "Différence ID";
+                        duplicate.Recommendation = $"Garder {emp39C.ID} ?";
                     }
-                    else if (emp39C.Num != match.Num)
+                    else if (emp39C.CardholderIdNumber != match.CardholderIdNumber)
                     {
-                         duplicate.Type = DuplicateType.NumeroDifferent;
-                         duplicate.Status = "Différence Numéro";
-                         duplicate.Recommendation = $"Garder {emp39C.Num} ?";
+                        duplicate.Type = DuplicateType.NumeroDifferent;
+                        duplicate.Status = "Différence Numéro";
+                        duplicate.Recommendation = $"Garder {emp39C.CardholderIdNumber} ?";
                     }
 
                     result.Duplicates.Add(duplicate);

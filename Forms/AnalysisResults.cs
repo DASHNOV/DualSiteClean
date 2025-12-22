@@ -101,10 +101,10 @@ namespace DoublonManager.Forms
             {
                 var rowIndex = dgvDuplicates.Rows.Add(
                     dup.SourceEmployee.FullName,
-                    dup.SourceEmployee.Code,
-                    dup.DestEmployee.Code,
-                    dup.SourceEmployee.Num,
-                    dup.DestEmployee.Num,
+                    dup.SourceEmployee.ID,
+                    dup.DestEmployee.ID,
+                    dup.SourceEmployee.CardholderIdNumber,
+                    dup.DestEmployee.CardholderIdNumber,
                     dup.Status,
                     dup.Recommendation
                 );

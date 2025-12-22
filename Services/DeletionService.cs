@@ -25,12 +25,12 @@ namespace DoublonManager.Services
                 if (siteToKeep == "39C")
                 {
                     // Delete 19M employee
-                    await _dbService.DeleteEmployee("19M", duplicate.DestEmployee.Code, deletedBy);
+                    await _dbService.DeleteEmployee("19M", duplicate.DestEmployee.ID, deletedBy);
                 }
                 else if (siteToKeep == "19M")
                 {
                     // Delete 39C employee
-                    await _dbService.DeleteEmployee("39C", duplicate.SourceEmployee.Code, deletedBy);
+                    await _dbService.DeleteEmployee("39C", duplicate.SourceEmployee.ID, deletedBy);
                 }
 
                 duplicate.Status = "Traité - Supprimé";

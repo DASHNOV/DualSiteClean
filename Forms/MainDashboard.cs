@@ -304,33 +304,27 @@ namespace DoublonManager.Forms
             }
         }
 
-        private async void btnAnalyze_Click(object? sender, EventArgs e)
+        private void btnAnalyze_Click(object? sender, EventArgs e)
         {
-            btnAnalyze.Text = "Analyse en cours...";
-            btnAnalyze.Enabled = false;
-
-            try 
+            if (_dbService == null)
             {
-                // Instantiate Services (Dependency Injection would be better in larger app)
-                var dbService = new DoublonManager.Services.DatabaseService("conn39C_placeholder", "conn19M_placeholder");
-                var analysisService = new DoublonManager.Services.AnalysisService(dbService);
-
-                var results = await analysisService.AnalyzeDuplicates();
-
-                // Reset button
-                btnAnalyze.Text = "🔍  Lancer une analyse";
-                btnAnalyze.Enabled = true;
-
-                // Open results
-                var resultForm = new AnalysisResults(results);
-                resultForm.ShowDialog();
+                MessageBox.Show(
+                    "Veuillez d'abord configurer les connexions aux bases de données.",
+                    "Configuration requise",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                
+                var settingsForm = new SettingsForm();
+                settingsForm.ShowDialog();
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erreur lors de l'analyse : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                btnAnalyze.Text = "🔍  Lancer une analyse";
-                btnAnalyze.Enabled = true;
-            }
+
+            var analysisForm = new AnalysisForm(_dbService);
+            analysisForm.ShowDialog();
+            
+            // Rafraîchir le dashboard après l'analyse
+            LoadDashboardData();
         }
 
         private void btnHistory_Click(object? sender, EventArgs e)

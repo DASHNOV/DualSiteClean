@@ -168,14 +168,14 @@ namespace DoublonManager.Forms
             grp39C.Controls.Add(new Label 
             { 
                 Text = "Mot de passe :", 
-                Location = new Point(420, 145),
+                Location = new Point(430, 145),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f)
             });
 
             txtPassword39C = new TextBox
             {
-                Location = new Point(530, 142),
+                Location = new Point(560, 142),
                 Size = new Size(200, 25),
                 PasswordChar = '●',
                 Enabled = false,
@@ -311,14 +311,14 @@ namespace DoublonManager.Forms
             grp19M.Controls.Add(new Label 
             { 
                 Text = "Mot de passe :", 
-                Location = new Point(420, 145),
+                Location = new Point(430, 145),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f)
             });
 
             txtPassword19M = new TextBox
             {
-                Location = new Point(530, 142),
+                Location = new Point(560, 142),
                 Size = new Size(200, 25),
                 PasswordChar = '●',
                 Enabled = false,
@@ -387,8 +387,23 @@ namespace DoublonManager.Forms
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
+            Button btnViewLogs = new Button
+            {
+                Text = "📋 Voir les logs",
+                Location = new Point(750, 650),
+                Size = new Size(200, 45),
+                BackColor = Color.White,
+                ForeColor = ColorHelper.Primary,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11f),
+                Cursor = Cursors.Hand
+            };
+            btnViewLogs.FlatAppearance.BorderColor = ColorHelper.Primary;
+            btnViewLogs.Click += (s, e) => LogHelper.OpenLogDirectory();
+
             this.Controls.Add(btnSave);
             this.Controls.Add(btnCancel);
+            this.Controls.Add(btnViewLogs);
         }
 
         // Événements
