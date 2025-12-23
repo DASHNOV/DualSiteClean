@@ -22,3 +22,14 @@ C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0
 C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\unix\lib\net6.0\System.Data.SqlClient.dll
 C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\win\lib\net6.0\System.Data.SqlClient.dll
 C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\obj\Debug\net6.0-windows\DoublonManager.sourcelink.json
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\DoublonManager.dll.config
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\Microsoft.Win32.SystemEvents.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\System.Configuration.ConfigurationManager.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\System.Drawing.Common.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\System.Security.Cryptography.ProtectedData.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\System.Security.Permissions.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\System.Windows.Extensions.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\win\lib\net6.0\System.Drawing.Common.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\bin\Debug\net6.0-windows\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
