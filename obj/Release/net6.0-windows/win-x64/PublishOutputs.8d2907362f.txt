@@ -1,0 +1,2 @@
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\dist\executable\DoublonManager.pdb
+C:\Users\rdenimal\Documents\gestionnaire_doublon\DoublonManager\dist\executable\DoublonManager.exe

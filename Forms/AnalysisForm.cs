@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DoublonManager.Services;
+using DoublonManager.Models;
 
 namespace DoublonManager.Forms
 {
@@ -25,6 +26,15 @@ namespace DoublonManager.Forms
         private DataGridView dgvDifferentCodes, dgvDifferentNumbers, dgvAmbiguous;
         
         private Button btnExportExcel, btnDeleteSelected, btnClose;
+
+        // Constantes de couleurs pour les sites
+        private static class SiteColors
+        {
+            public static readonly Color Site39C_Background = Color.FromArgb(220, 237, 255);
+            public static readonly Color Site39C_Text = Color.FromArgb(0, 84, 166);
+            public static readonly Color Site19M_Background = Color.FromArgb(255, 235, 220);
+            public static readonly Color Site19M_Text = Color.FromArgb(166, 84, 0);
+        }
 
         public AnalysisForm(DatabaseService dbService)
         {
@@ -188,6 +198,7 @@ namespace DoublonManager.Forms
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 35F)); // Value
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 25F)); // Desc
 
+
             Label lblIcon = new Label
             {
                 Text = icon,
@@ -267,9 +278,11 @@ namespace DoublonManager.Forms
             tabAmbiguous.Controls.AddRange(new Control[] { panelAmbiguousHelp, dgvAmbiguous });
 
             tabResults.TabPages.AddRange(new TabPage[] { tabDiffCodes, tabDiffNumbers, tabAmbiguous });
+            
             parent.Controls.Add(tabResults);
             tabResults.BringToFront(); // Below summary because summary is Dock.Top
         }
+
 
         private DataGridView CreateResultsGrid()
         {
@@ -294,22 +307,62 @@ namespace DoublonManager.Forms
             // Ajouter colonnes
             dgv.Columns.AddRange(new DataGridViewColumn[]
             {
-                new DataGridViewCheckBoxColumn { Name = "Select", HeaderText = "☑️", Width = 50, FillWeight = 2 },
-                new DataGridViewTextBoxColumn { Name = "Code39C", HeaderText = "ID (39C)", FillWeight = 10 },
-                new DataGridViewTextBoxColumn { Name = "Nom39C", HeaderText = "Nom Prénom (39C)", FillWeight = 15 },
-                new DataGridViewTextBoxColumn { Name = "Numero39C", HeaderText = "N° Cardholder (39C)", FillWeight = 12 },
-                new DataGridViewTextBoxColumn { Name = "DateModif39C", HeaderText = "Dernier Download (39C)", FillWeight = 13 },
-                new DataGridViewTextBoxColumn { Name = "Code19M", HeaderText = "ID (19M)", FillWeight = 10 },
-                new DataGridViewTextBoxColumn { Name = "Nom19M", HeaderText = "Nom Prénom (19M)", FillWeight = 15 },
-                new DataGridViewTextBoxColumn { Name = "Numero19M", HeaderText = "N° Cardholder (19M)", FillWeight = 12 },
-                new DataGridViewTextBoxColumn { Name = "DateModif19M", HeaderText = "Dernier Download (19M)", FillWeight = 13 },
-                new DataGridViewTextBoxColumn { Name = "Confidence", HeaderText = "Confiance", FillWeight = 8 }
+                new DataGridViewCheckBoxColumn { Name = "Select", HeaderText = "☑️", Width = 40, FillWeight = 3 },
+                new DataGridViewTextBoxColumn { Name = "Site", HeaderText = "🏢 Site", FillWeight = 12 },
+                new DataGridViewTextBoxColumn { Name = "ID", HeaderText = "🆔 Matricule", FillWeight = 10 },
+                new DataGridViewTextBoxColumn { Name = "Nom", HeaderText = "👤 Nom", FillWeight = 15 },
+                new DataGridViewTextBoxColumn { Name = "Prenom", HeaderText = "👤 Prénom", FillWeight = 15 },
+                new DataGridViewTextBoxColumn { Name = "Cardholder", HeaderText = "💳 Cardholder", FillWeight = 12 },
+                new DataGridViewTextBoxColumn { Name = "DateModif", HeaderText = "📅 Modification", FillWeight = 13 },
+                new DataGridViewTextBoxColumn { Name = "Confidence", HeaderText = "📈 Confiance", FillWeight = 8 },
+                new DataGridViewTextBoxColumn { Name = "Recommendation", HeaderText = "💡 Suggestion", FillWeight = 12 },
+                new DataGridViewButtonColumn { Name = "ColVoir", HeaderText = "Action", Text = "👁️ Voir", UseColumnTextForButtonValue = true, FillWeight = 8, FlatStyle = FlatStyle.Flat }
             });
 
-            // Événements pour l'effet visuel
+            // Événements pour l'effet visuel et liaison de sélection
             dgv.CellValueChanged += (s, e) => {
                 if (e.RowIndex >= 0 && dgv.Columns[e.ColumnIndex].Name == "Select") {
+                    var currentPair = dgv.Rows[e.RowIndex].Tag as DuplicatePair;
+                    bool newValue = (bool)dgv.Rows[e.RowIndex].Cells["Select"].Value;
+
+                    // Synchroniser l'autre ligne du même doublon
+                    foreach (DataGridViewRow row in dgv.Rows)
+                    {
+                        if (row.Index != e.RowIndex && row.Tag == currentPair)
+                        {
+                            if ((bool)row.Cells["Select"].Value != newValue)
+                            {
+                                row.Cells["Select"].Value = newValue;
+                                UpdateRowStyle(row);
+                            }
+                        }
+                    }
                     UpdateRowStyle(dgv.Rows[e.RowIndex]);
+                }
+            };
+
+            dgv.CellContentClick += (s, e) => {
+                if (e.RowIndex >= 0 && dgv.Columns[e.ColumnIndex].Name == "ColVoir")
+                {
+                    // Récupérer l'employé spécifique à cette ligne
+                    // Nous stockons l'employé spécifique dans la cellule "ID" ou via un autre mécanisme
+                    // Pour simplifier, on va stocker l'employé dans le Tag de la CELLULE "Site"
+                    var emp = dgv.Rows[e.RowIndex].Cells["Site"].Tag as DbEmployee;
+                    if (emp != null)
+                    {
+                        MessageBox.Show(
+                            $"Détails de l'employé :\n\n" +
+                            $"📍 Site : {emp.SiteCode}\n" +
+                            $"🆔 Matricule : {emp.ID}\n" +
+                            $"👤 Nom : {emp.LastName}\n" +
+                            $"👤 Prénom : {emp.FirstName}\n" +
+                            $"💳 Cardholder : {emp.CardholderIdNumber}\n" +
+                            $"📅 Dernier Download : {emp.LastDownloadTime:dd/MM/yyyy HH:mm}",
+                            "Détails de l'enregistrement",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information
+                        );
+                    }
                 }
             };
 
@@ -325,32 +378,53 @@ namespace DoublonManager.Forms
 
         private void UpdateRowStyle(DataGridViewRow row)
         {
-            if (row.Tag == null) return; // Sécurité si la ligne n'est pas encore prête
+            if (row.Tag == null) return;
             
             bool isSelected = row.Cells["Select"].Value != null && (bool)row.Cells["Select"].Value;
-            var dup = (DuplicatePair)row.Tag;
+            var pair = (DuplicatePair)row.Tag;
+            var emp = row.Cells["Site"].Tag as DbEmployee;
 
             if (isSelected)
             {
-                // Effet "Barré" et Gris
+                // Effet "Barré" et Gris pour toute la ligne
                 row.DefaultCellStyle.ForeColor = Color.Gray;
                 row.DefaultCellStyle.SelectionForeColor = Color.Gray;
                 row.DefaultCellStyle.Font = new Font(dgvDifferentCodes.Font, FontStyle.Strikeout);
                 row.DefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240);
+                
+                // Forcer le gris aussi sur la cellule Site
+                row.Cells["Site"].Style.BackColor = Color.FromArgb(230, 230, 230);
+                row.Cells["Site"].Style.ForeColor = Color.DarkGray;
             }
             else
             {
-                // Restaurer style normal (basé sur la confiance)
+                // Restaurer style normal
                 row.DefaultCellStyle.ForeColor = Color.Black;
                 row.DefaultCellStyle.SelectionForeColor = Color.White;
                 row.DefaultCellStyle.Font = new Font(dgvDifferentCodes.Font, FontStyle.Regular);
                 
-                if (dup.Confidence >= 0.8)
+                // Couleur basée sur la confiance pour le fond de ligne
+                if (pair.Confidence >= 0.8)
                     row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#D5F4E6");
-                else if (dup.Confidence >= 0.6)
+                else if (pair.Confidence >= 0.6)
                     row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FEF9E7");
                 else
                     row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FADBD8");
+
+                // Restaurer la couleur spécifique du site pour la cellule Site
+                if (emp != null)
+                {
+                    if (emp.SiteCode == "39C")
+                    {
+                        row.Cells["Site"].Style.BackColor = SiteColors.Site39C_Background;
+                        row.Cells["Site"].Style.ForeColor = SiteColors.Site39C_Text;
+                    }
+                    else
+                    {
+                        row.Cells["Site"].Style.BackColor = SiteColors.Site19M_Background;
+                        row.Cells["Site"].Style.ForeColor = SiteColors.Site19M_Text;
+                    }
+                }
             }
         }
 
@@ -501,7 +575,7 @@ namespace DoublonManager.Forms
             tabResults.TabPages[0].Text = $"⚠️ Codes différents ({_analysisResult.DifferentCodeDuplicates.Count})";
             tabResults.TabPages[1].Text = $"⚠️ Numéros différents ({_analysisResult.DifferentNumberDuplicates.Count})";
             tabResults.TabPages[2].Text = $"❓ Cas ambigus ({_analysisResult.AmbiguousCases.Count})";
-
+            
             // Afficher les boutons d'action
             if (_analysisResult.TotalDuplicates > 0)
             {
@@ -518,29 +592,69 @@ namespace DoublonManager.Forms
 
             foreach (var dup in duplicates)
             {
-                int rowIndex = dgv.Rows.Add();
-                DataGridViewRow row = dgv.Rows[rowIndex];
-                row.Tag = dup; // On définit le tag IMMÉDIATEMENT
-
-                row.Cells["Select"].Value = false;
-                row.Cells["Code39C"].Value = dup.Employee39C.ID;
-                row.Cells["Nom39C"].Value = dup.Employee39C.FullName;
-                row.Cells["Numero39C"].Value = dup.Employee39C.CardholderIdNumber;
-                row.Cells["DateModif39C"].Value = dup.Employee39C.LastDownloadTime.ToString("yyyy-MM-dd HH:mm");
-                row.Cells["Code19M"].Value = dup.Employee19M.ID;
-                row.Cells["Nom19M"].Value = dup.Employee19M.FullName;
-                row.Cells["Numero19M"].Value = dup.Employee19M.CardholderIdNumber;
-                row.Cells["DateModif19M"].Value = dup.Employee19M.LastDownloadTime.ToString("yyyy-MM-dd HH:mm");
-                row.Cells["Confidence"].Value = $"{dup.Confidence:P0}";
-
-                // Colorer la ligne selon le niveau de confiance
-                if (dup.Confidence >= 0.8)
-                    row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#D5F4E6"); // Vert clair
-                else if (dup.Confidence >= 0.6)
-                    row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FEF9E7"); // Jaune clair
-                else
-                    row.DefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FADBD8"); // Rouge clair
+                // On ajoute DEUX lignes par doublon (une par site)
+                AddEmployeeRow(dgv, dup, dup.Employee39C);
+                AddEmployeeRow(dgv, dup, dup.Employee19M);
+                
+                // On peut ajouter une ligne vide ou un séparateur visuel ?
+                // Non, on va utiliser une bordure ou une couleur de groupe.
             }
+        }
+
+        private void AddEmployeeRow(DataGridView dgv, DuplicatePair pair, DbEmployee emp)
+        {
+            int idx = dgv.Rows.Add();
+            DataGridViewRow row = dgv.Rows[idx];
+            
+            row.Tag = pair; // Le tag est la PAIRE pour pouvoir gérer la suppression/sélection groupée
+            
+            // Site detail for Action button
+            row.Cells["Site"].Tag = emp;
+
+            row.Cells["Select"].Value = false;
+            row.Cells["Site"].Value = emp.SiteCode == "39C" ? "📍 Site 39C" : "📍 Site 19M";
+            row.Cells["ID"].Value = emp.ID;
+            row.Cells["Nom"].Value = emp.LastName;
+            row.Cells["Prenom"].Value = emp.FirstName;
+            row.Cells["Cardholder"].Value = emp.CardholderIdNumber;
+            row.Cells["DateModif"].Value = emp.LastDownloadTime.ToString("dd/MM/yyyy HH:mm");
+            row.Cells["Confidence"].Value = $"{pair.Confidence:P0}";
+
+            // Logique de suggestion (basée sur la date la plus récente)
+            var otherEmp = (emp == pair.Employee39C) ? pair.Employee19M : pair.Employee39C;
+            if (emp.LastDownloadTime > otherEmp.LastDownloadTime)
+            {
+                row.Cells["Recommendation"].Value = "✅ Garder (Récent)";
+                row.Cells["Recommendation"].Style.ForeColor = Color.DarkGreen;
+            }
+            else if (emp.LastDownloadTime < otherEmp.LastDownloadTime)
+            {
+                row.Cells["Recommendation"].Value = "🗑️ Supprimer (Ancien)";
+                row.Cells["Recommendation"].Style.ForeColor = Color.Firebrick;
+            }
+            else
+            {
+                row.Cells["Recommendation"].Value = "❓ Identique";
+                row.Cells["Recommendation"].Style.ForeColor = Color.Orange;
+            }
+            row.Cells["Recommendation"].Style.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+
+            // Style spécifique au site
+            if (emp.SiteCode == "39C")
+            {
+                row.Cells["Site"].Style.BackColor = SiteColors.Site39C_Background;
+                row.Cells["Site"].Style.ForeColor = SiteColors.Site39C_Text;
+                row.Cells["Site"].Style.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            }
+            else
+            {
+                row.Cells["Site"].Style.BackColor = SiteColors.Site19M_Background;
+                row.Cells["Site"].Style.ForeColor = SiteColors.Site19M_Text;
+                row.Cells["Site"].Style.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            }
+
+            // Appliquer le style initial (couleur de confiance)
+            UpdateRowStyle(row);
         }
 
         #endregion
@@ -593,7 +707,11 @@ namespace DoublonManager.Forms
                 {
                     if (row.Cells["Select"].Value != null && (bool)row.Cells["Select"].Value)
                     {
-                        selectedDuplicates.Add((DuplicatePair)row.Tag);
+                        var pair = (DuplicatePair)row.Tag;
+                        if (!selectedDuplicates.Contains(pair))
+                        {
+                            selectedDuplicates.Add(pair);
+                        }
                     }
                 }
             }

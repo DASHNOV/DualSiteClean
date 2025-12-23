@@ -250,13 +250,25 @@ namespace DoublonManager.Forms
             btn.MouseLeave += (s, e) => btn.BackColor = normalColor;
         }
 
-        private void InitializeDatabase()
+        private async void InitializeDatabase()
         {
             var (site39C, site19M) = ConnectionHelper.LoadConnectionSettings();
             
             if (site39C == null || site19M == null)
             {
-                // Afficher SettingsForm comme dans l'étape 1
+                MessageBox.Show(
+                    "Les paramètres de connexion aux bases de données ne sont pas configurés.\n\nVeuillez les configurer pour continuer.",
+                    "Configuration requise",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+
+                var settingsForm = new SettingsForm();
+                if (settingsForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Réinstaller après configuration
+                    InitializeDatabase();
+                }
                 return;
             }
 
